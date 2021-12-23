@@ -27,6 +27,38 @@ public class CameraController : MonoBehaviour
 
     private void LateUpdate()
     {
-        
+        // Get movement inputs
+        rotX += Input.GetAxis("Mouse X") * sensX;
+        rotY += Input.GetAxis("Mouse Y") * sensY;
+
+        // Clamp vertical rotation
+        rotY = Mathf.Clamp(rotY, minY, maxY);
+
+        if (isSpectator)
+        {
+            // Rotate camera vertically
+            transform.rotation = Quaternion.Euler(-rotY, rotX, 0);
+
+            // Movement
+            float x = Input.GetAxis("Horizontal");
+            float z = Input.GetAxis("Vertical");
+            float y = 0;
+
+            if (Input.GetKey(KeyCode.E))
+                y = 1;
+            else
+                y = -1;
+
+            Vector3 dir = transform.right * x + transform.up * y + transform.forward * z;
+            transform.position += dir * spectatorMoveSpeed * Time.deltaTime;
+        }
+        else
+        {
+            // Rotate camera vertically
+            transform.localRotation = Quaternion.Euler(-rotY, 0, 0);
+
+            // Rotate player horizontally
+            transform.parent.rotation = Quaternion.Euler(0, rotX, 0);
+        }
     }
 }
