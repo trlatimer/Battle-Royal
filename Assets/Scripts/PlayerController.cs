@@ -6,16 +6,24 @@ using Photon.Realtime;
 
 public class PlayerController : MonoBehaviourPun
 {
-    [Header("info")]
+    [Header("Info")]
     public int id;
+    private int curAttackerId;
 
     [Header("Stats")]
     public float moveSpeed;
     public float jumpForce;
+    public int curHP;
+    public int maxHP;
+    public int kills;
+    public bool dead;
+
+    private bool flashingDamage;
 
     [Header("Components")]
     public Rigidbody rig;
     public Player photonPlayer;
+    public MeshRenderer mr;
 
     [PunRPC]
     public void Initialize(Player player)
@@ -36,10 +44,13 @@ public class PlayerController : MonoBehaviourPun
 
     private void Update()
     {
-        Move();
+        if (!photonView.IsMine || dead)
+        {
+            Move();
 
-        if (Input.GetKeyDown(KeyCode.Space))
-            TryJump();
+            if (Input.GetKeyDown(KeyCode.Space))
+                TryJump();
+        }
     }
 
     private void Move()
@@ -63,5 +74,50 @@ public class PlayerController : MonoBehaviourPun
 
         if (Physics.Raycast(ray, 1.5f))
             rig.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+    }
+
+    [PunRPC]
+    public void TakeDamage(int attackerId, int damage)
+    {
+        if (dead) return;
+
+        curHP -= damage;
+        curAttackerId = attackerId;
+
+        // Flash player red
+        photonView.RPC("DamageFlash", RpcTarget.Others);
+
+        // Update Health UI
+
+        // Die if no health
+        if (curHP <= 0)
+            photonView.RPC("Die", RpcTarget.All);
+    }
+
+    [PunRPC]
+    private void DamageFlash()
+    {
+        if (flashingDamage) return;
+
+        StartCoroutine(DamageFlashCoroutine());
+
+        IEnumerator DamageFlashCoroutine()
+        {
+            flashingDamage = true;
+
+            Color defaultColor = mr.material.color;
+            mr.material.color = Color.red;
+
+            yield return new WaitForSeconds(0.05f);
+
+            mr.material.color = defaultColor;
+            flashingDamage = false;
+        }
+    }
+
+    [PunRPC]
+    private void Die()
+    {
+
     }
 }
