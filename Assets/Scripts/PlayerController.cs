@@ -23,6 +23,7 @@ public class PlayerController : MonoBehaviourPun
     [Header("Components")]
     public Rigidbody rig;
     public Player photonPlayer;
+    public PlayerWeapon weapon;
     public MeshRenderer mr;
 
     [PunRPC]
@@ -44,12 +45,15 @@ public class PlayerController : MonoBehaviourPun
 
     private void Update()
     {
-        if (!photonView.IsMine || dead)
+        if (photonView.IsMine && !dead)
         {
             Move();
 
             if (Input.GetKeyDown(KeyCode.Space))
                 TryJump();
+
+            if (Input.GetMouseButtonDown(0))
+                weapon.TryShoot();
         }
     }
 
@@ -118,6 +122,35 @@ public class PlayerController : MonoBehaviourPun
     [PunRPC]
     private void Die()
     {
+        curHP = 0;
+        dead = true;
 
+        GameManager.instance.alivePlayers--;
+
+        // Host checks win
+        if (PhotonNetwork.IsMasterClient)
+            GameManager.instance.CheckWinCondition();
+
+        // is this us?
+        if (photonView.IsMine)
+        {
+            if (curAttackerId != 0)
+                GameManager.instance.GetPlayer(curAttackerId).photonView.RPC("AddKill", RpcTarget.All);
+
+            // Set cam to spectator
+            GetComponentInChildren<CameraController>().SetAsSpectator();
+
+            // Disable physics, hide player
+            rig.isKinematic = true;
+            transform.position = new Vector3(0, -50, 0);
+        }
+    }
+
+    [PunRPC]
+    public void AddKill()
+    {
+        kills++;
+
+        // Update UI
     }
 }

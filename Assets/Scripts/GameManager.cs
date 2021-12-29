@@ -7,6 +7,8 @@ using System.Linq;
 
 public class GameManager : MonoBehaviourPun
 {
+    public float postGameTime;
+
     [Header("Players")]
     public string playerPrefabLocation;
     public PlayerController[] players;
@@ -49,5 +51,34 @@ public class GameManager : MonoBehaviourPun
 
         // Initialize the player
         playerObj.GetComponent<PlayerController>().photonView.RPC("Initialize", RpcTarget.All, PhotonNetwork.LocalPlayer);
+    }
+
+    public PlayerController GetPlayer(int playerId)
+    {
+        return players.First(x => x.id == playerId);
+    }
+
+    public PlayerController GetPlayer(GameObject playerObject)
+    {
+        return players.First(x => x.gameObject == playerObject);
+    }
+
+    public void CheckWinCondition()
+    {
+        if (alivePlayers == 1)
+            photonView.RPC("WinGame", RpcTarget.All, players.First(x => !x.dead).id);
+    }
+
+    [PunRPC]
+    private void WinGame(int winningPlayer)
+    {
+        // Set win UI text
+
+        Invoke("GoBackToMenu", postGameTime);
+    }
+
+    private void GoBackToMenu()
+    {
+        NetworkManager.instance.ChangeScene("Menu");
     }
 }
