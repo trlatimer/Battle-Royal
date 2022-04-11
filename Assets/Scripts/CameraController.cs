@@ -66,5 +66,6 @@ public class CameraController : MonoBehaviour
     {
         isSpectator = true;
         transform.parent = null;
+        gameObject.GetComponent<Rigidbody>().isKinematic = true;
     }
 }
